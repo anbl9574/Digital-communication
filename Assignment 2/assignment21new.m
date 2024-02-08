@@ -2,6 +2,8 @@ clc
 clearvars
 close all
 
+%Git sug mitt ass
+
 load("Bitstream.mat");
 bitstream = estimatedBitStream;
 %randi([0 1], 100, 1);
