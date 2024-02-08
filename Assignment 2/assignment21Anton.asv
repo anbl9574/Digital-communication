@@ -17,7 +17,7 @@ Es=1;
     % Map symbols to amplitudes (equally and symmetrically spaced)
     amplitudeLevels = linspace(-(M-1)*d, (M-1)*d, M);
     %disp(amplitudeLevels)
-    Signaltransmit = amplitudeLevels(symbols);
+    Signal = amplitudeLevels(symbols);
     %disp(signalAmplitudes)
     % Create the transmitted signal
     %Signal = repelem(amplitudeLevels, k);
@@ -26,18 +26,13 @@ Es=1;
         E = E + amplitudeLevels(i)^2;
     end
     E = E/4
-    if length(Signaltransmit)==length(bitstream)
-        transmitSignal=Signaltransmit;
-    else 
-        transmitSignal=padarray(Signaltransmit,[0,length(bitstream)-length(Signaltransmit)],'post')
-    end 
+    if length()
     % Rectangular pulse shaping
-    T=100;
-    sampleRate = T;
-    shapedSignal = rectpulse(transmitSignal, sampleRate);
+    sampleRate = 1/T;
+    shapedSignal = rectpulse(transmitSignal, T*sampleRate);
 
     % Return shaped signal
-    Signal = shapedSignal;
+    transmitSignal = shapedSignal;
 
 
 %end 
