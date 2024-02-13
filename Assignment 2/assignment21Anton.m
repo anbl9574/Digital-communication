@@ -5,10 +5,10 @@ close all
 %%
 %Defining parameters and loading in bitstream from assignment 2
 
-load("Bitstream.mat");
+load("Bitstream1bit.mat");
 bitstream = estimatedBitStream;
 transmittedBitstream=bitstream;
-M=4;
+M=2;
 Es=1;
 T=100;
 %%
@@ -24,7 +24,7 @@ receivedSignal = MyMPAM(bitstream, M, Es);
 receiveSignal = MyAWGNchannel(receivedSignal,10);
 
 [estimatedBitstream, BER] = DemodulateMPAM(receiveSignal,M,Es,transmittedBitstream);
-noiseVariance = logspace(-1,-3,spacing);
+noiseVariance = logspace(-3,-1,spacing);
 
 %testing
 for i = 1:spacing
@@ -35,9 +35,6 @@ for i = 1:spacing
     Ber_2_PAM(i) = BER;
 end 
 
-M=4;
-Es=1;
-T=100;
 
 
 for i = 1:spacing
@@ -104,13 +101,33 @@ grid on;
 
 function receivedSignal = MyMPAM(bitstream,M,Es)
     d = sqrt(3*Es/(M^2-1));
+    
     k = log2(M);
+
+    if mod(length(bitstream), k) ~= 0
+
+    % Calculate the number of zeros needed for padding
+    paddingSize = k - mod(length(bitstream), k);
+    % Pad the bitstream with zeros
+    bitstream = padarray(bitstream, [0, paddingSize], 'post');   
+    else 
+        bitstream=bitstream;
+    end 
     symbolMatrix = reshape(bitstream, k, length(bitstream)/k)';
-    symbols=bi2de(symbolMatrix, 'left-msb') + Es;
+    
     % Map symbols to amplitudes (equally and symmetrically spaced)
+
     amplitudeLevels = linspace(-(M-1)*d, (M-1)*d, M);
+    if k>1
+    symbols=bi2de(symbolMatrix,k,'left-msb') +Es;
+    else 
+        symbols=symbolMatrix+Es;
+
+    end 
+    % Map symbols to amplitudes (equally and symmetrically spaced)
     %disp(amplitudeLevels)
-    Signaltransmit = amplitudeLevels(symbols);
+    symbols(symbols > M) = M; %Don't know
+    transmitSignal = amplitudeLevels(symbols);
     %disp(signalAmplitudes)
     % Create the transmitted signal
     E = 0;
@@ -118,11 +135,7 @@ function receivedSignal = MyMPAM(bitstream,M,Es)
         E = E + amplitudeLevels(i)^2;
     end
     E = E/4;
-    if length(Signaltransmit)==length(bitstream)
-        transmitSignal=Signaltransmit;
-    else 
-        transmitSignal=padarray(Signaltransmit,[0,length(bitstream)-length(Signaltransmit)],'post');
-    end 
+
     % Rectangular pulse shaping
     T=100;
     sampleRate = T;
@@ -133,6 +146,7 @@ function receivedSignal = MyMPAM(bitstream,M,Es)
 
 
 end 
+
 
 function [estimatedBitstream, BER] = DemodulateMPAM(receivedSignal, M, Es, transmittedBitstream, T)
 
@@ -151,20 +165,15 @@ function [estimatedBitstream, BER] = DemodulateMPAM(receivedSignal, M, Es, trans
 
         for i = 1:size(receivedMatrix, 1)
         [~, index] = min(abs(receivedMatrix(i, 1) - amplitudeLevels));
-        estimatedSymbols(i) = index-1;  % Adjust for 0-based indexing
+        estimatedSymbols(i) = index-1; 
         end
         
-       % symbols = estimatedSymbols(estimatedSymbols ~= -1);
-
         % Convert symbols to bitstream
         estimatedSymbolMatrix = de2bi(estimatedSymbols, k, 'left-msb');
-        estimatedBitstream = reshape(estimatedSymbolMatrix', k, []);
-        
+        estimatedBitstream = reshape(estimatedSymbolMatrix', 1, []);
+        estimatedBitstream=estimatedBitstream(1:size(transmittedBitstream,2));
         % Calculate Bit Error Rate (BER)
-
-        disp(size(estimatedBitstream))
-        disp(size(transmittedBitstream))
-
+    
         numErrors = sum(estimatedBitstream ~= transmittedBitstream);
         BER = numErrors / length(transmittedBitstream);
 end
