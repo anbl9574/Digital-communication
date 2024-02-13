@@ -11,8 +11,31 @@ M=4;
 Es=1;
 T=100;
 receivedSignal = MyMPAM(bitstream, M, Es);
+receiveSignal = MyAWGNchannel(receivedSignal,noiseVariance);
 plot(receivedSignal(1:10000))%transmitted
-[estimatedBitstream, BER] = DemodulateMPAM(receivedSignal,M,Es,transmittedBitstream)
+[estimatedBitstream, BER] = DemodulateMPAM(receivedSignal,M,Es,transmittedBitstream);
+
+% Generate a random starting index
+startIndex = randi(length(bitstream) -100 + 1);
+% Select a range of 50 elements
+endIndex = startIndex + 99;
+subsetBitstream = bitstream(startIndex:endIndex);
+subsetEstimatedBitstream = estimatedBitstream(startIndex:endIndex);
+
+figure;
+
+subplot(2, 1, 1);
+stem(subsetBitstream, 'Marker', 'o', 'DisplayName', 'Original Bitstream');
+title('Original Bitstream');
+
+subplot(2, 1, 2);
+stem(subsetEstimatedBitstream, 'Marker', 'x', 'DisplayName', 'Estimated Bitstream');
+title('Estimated Bitstream');
+legend('show');
+
+
+
+
 
 function receivedSignal = MyMPAM(bitstream,M,Es)
     d = sqrt(3*Es/(M^2-1));
@@ -59,10 +82,13 @@ function [estimatedBitstream, BER] = DemodulateMPAM(receivedSignal, M, Es, trans
 
        % Estimate symbols from received samples
         [~, symbols] = ismember(receivedMatrix, amplitudeLevels);
+        
 
         symbols=symbols(:,1)-Es;
+        symbols = symbols(symbols ~= -1);
+
         % Convert symbols to bitstream
-        estimatedSymbolMatrix = de2bi(symbols, 3, 'left-msb');
+        estimatedSymbolMatrix = de2bi(symbols, k, 'left-msb');
         estimatedBitstream = reshape(estimatedSymbolMatrix', 1, []);
 
         % Calculate Bit Error Rate (BER)
@@ -70,3 +96,14 @@ function [estimatedBitstream, BER] = DemodulateMPAM(receivedSignal, M, Es, trans
         BER = numErrors / length(transmittedBitstream);
 
 end
+
+
+function receiveSignal = MyAWGNchannel(transmitSignal, noiseVariance)
+    % Add white Gaussian noise to the transmitted signal
+    receiveSignal = transmitSignal + sqrt(noiseVariance) * randn(size(transmitSignal));
+end
+
+
+
+
+end 

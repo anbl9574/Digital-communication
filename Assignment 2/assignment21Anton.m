@@ -2,17 +2,37 @@ clc
 clearvars
 close all
 
+%%
+%Defining parameters and loading in bitstream from assignment 2
+
 load("Bitstream.mat");
 bitstream = estimatedBitStream;
-
 transmittedBitstream=bitstream;
-%randi([0 1], 100, 1);
 M=4;
 Es=1;
 T=100;
+%%
+
+%Calling the functions
 receivedSignal = MyMPAM(bitstream, M, Es);
-plot(receivedSignal(1:10000))%transmitted
+noiseVariance = logspace (0,3,size(receivedSignal,2)) ;
+receiveSignal = MyAWGNchannel(receivedSignal,noiseVariance);
 [estimatedBitstream, BER] = DemodulateMPAM(receivedSignal,M,Es,transmittedBitstream);
+
+
+%%
+%Plots
+
+plot(receivedSignal(1:10000))%transmitted
+
+plot(receiveSignal(1:10000))
+% Plotting log noise 
+figure;
+loglog(1:size(receivedSignal, 2), noiseVariance, 'o-', 'LineWidth', 2);
+title('Noise Variance vs. Index of Columns');
+xlabel('Index of Columns');
+ylabel('Noise Variance');
+grid on;
 
 % Generate a random starting index
 startIndex = randi(length(bitstream) -100 + 1);
@@ -20,7 +40,6 @@ startIndex = randi(length(bitstream) -100 + 1);
 endIndex = startIndex + 99;
 subsetBitstream = bitstream(startIndex:endIndex);
 subsetEstimatedBitstream = estimatedBitstream(startIndex:endIndex);
-
 figure;
 
 subplot(2, 1, 1);
@@ -33,7 +52,8 @@ title('Estimated Bitstream');
 legend('show');
 
 
-
+%%
+%Functions
 
 function receivedSignal = MyMPAM(bitstream,M,Es)
     d = sqrt(3*Es/(M^2-1));
@@ -94,4 +114,14 @@ function [estimatedBitstream, BER] = DemodulateMPAM(receivedSignal, M, Es, trans
         BER = numErrors / length(transmittedBitstream);
 
 end
+
+
+function receiveSignal = MyAWGNchannel(transmitSignal, noiseVariance)
+    % Add white Gaussian noise to the transmitted signal
+    noise = sqrt(noiseVariance) .* randn(size(transmitSignal));
+
+    receiveSignal = transmitSignal + noise;
+end
+
+
 
