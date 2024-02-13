@@ -11,17 +11,38 @@ transmittedBitstream=bitstream;
 M=2;
 Es=1;
 T=100;
+
 %%
 
 %Calling the functions
-spacing=500;
+spacing=100;
 
 Ber_2_PAM=zeros(spacing,1);
 Ber_8_PAM=zeros(spacing,1);
 
-receivedSignal = MyMPAM(bitstream, M, Es);
-%noiseVariance = logspace (0,3) ;
-receiveSignal = MyAWGNchannel(receivedSignal,10);
+transmitSignal = MyMPAM(bitstream, M, Es);
+receiveSignal = MyAWGNchannel(transmitSignal,0.01);
+%%
+
+% Plotting the signal with noise against the one without
+figure;
+
+% Plot received signal with AWGN
+plot(receiveSignal(1:10000), 'LineWidth', 2, 'DisplayName', 'Received Signal with AWGN');
+hold on;
+
+% Plot transmitted signal without AWGN with transparency
+plot(transmitSignal(1:10000), 'LineWidth', 2, 'DisplayName', 'Transmitted Signal', 'Color',[1 0.6471 0], 'LineStyle', '--');
+
+hold off;
+
+xlabel('Sample Index');
+ylabel('Amplitude');
+title('Transmitted Signal with and without AWGN');
+legend('show');
+
+grid on;
+%%
 
 [estimatedBitstream, BER] = DemodulateMPAM(receiveSignal,M,Es,transmittedBitstream);
 noiseVariance = logspace(-3,-1,spacing);
@@ -57,9 +78,7 @@ end
 %%
 %Plots
 
-plot(receivedSignal(1:10000))%transmitted
-
-plot(receiveSignal(1:10000))
+%plot(receiveSignal(1:500000))%with AWGN
 % Plotting log noise 
 figure;
 loglog(1:spacing, noiseVariance, 'o-', 'LineWidth', 2);
@@ -106,7 +125,7 @@ grid on;
 %%
 %Functions
 
-function receivedSignal = MyMPAM(bitstream,M,Es)
+function transmitSignal = MyMPAM(bitstream,M,Es)
     d = sqrt(3*Es/(M^2-1));
     
     k = log2(M);
@@ -149,7 +168,7 @@ function receivedSignal = MyMPAM(bitstream,M,Es)
     shapedSignal = rectpulse(transmitSignal, sampleRate);
 
     % Return shaped signal
-    receivedSignal=shapedSignal;
+    transmitSignal=shapedSignal;
 
 
 end 
@@ -187,11 +206,13 @@ end
 
 
 function receiveSignal = MyAWGNchannel(transmitSignal, noiseVariance)
-    % Add white Gaussian noise to the transmitted signal
-    noise = sqrt(noiseVariance) * randn(size(transmitSignal));
-
+    % Generate white Gaussian noise with specified variance
+    noise = wgn(size(transmitSignal, 1), size(transmitSignal, 2), noiseVariance, 'linear');
+    
+    % Add noise to the transmitted signal
     receiveSignal = transmitSignal + noise;
 end
+
 
 
 function [estimatedBitstreammatched, BERmatched] = DemodulateMPAMmatched(receivedSignal,M,Es,transmittedBitstream,matchedFilterFlag);
