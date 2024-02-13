@@ -14,6 +14,27 @@ receivedSignal = MyMPAM(bitstream, M, Es);
 plot(receivedSignal(1:10000))%transmitted
 [estimatedBitstream, BER] = DemodulateMPAM(receivedSignal,M,Es,transmittedBitstream);
 
+% Generate a random starting index
+startIndex = randi(length(bitstream) -100 + 1);
+% Select a range of 50 elements
+endIndex = startIndex + 99;
+subsetBitstream = bitstream(startIndex:endIndex);
+subsetEstimatedBitstream = estimatedBitstream(startIndex:endIndex);
+
+figure;
+
+subplot(2, 1, 1);
+stem(subsetBitstream, 'Marker', 'o', 'DisplayName', 'Original Bitstream');
+title('Original Bitstream');
+
+subplot(2, 1, 2);
+stem(subsetEstimatedBitstream, 'Marker', 'x', 'DisplayName', 'Estimated Bitstream');
+title('Estimated Bitstream');
+legend('show');
+
+
+
+
 function receivedSignal = MyMPAM(bitstream,M,Es)
     d = sqrt(3*Es/(M^2-1));
     k = log2(M);
@@ -73,3 +94,4 @@ function [estimatedBitstream, BER] = DemodulateMPAM(receivedSignal, M, Es, trans
         BER = numErrors / length(transmittedBitstream);
 
 end
+
