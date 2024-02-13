@@ -8,9 +8,9 @@ close all
 load("Bitstream3bit.mat");
 bitstream = estimatedBitStream;
 transmittedBitstream=bitstream;
-M=2;
-Es=1;
-T=100;
+Es = 4;
+M = 8;
+NoiseVariance = logspace (0 ,1.5) ;
 %%
 
 %Calling the functions
@@ -46,6 +46,8 @@ for i = 1:spacing
 end 
 
 
+[estimatedBitstreammatched, BERmatched] = DemodulateMPAMmatched(receivedSignal,M,Es,transmittedBitstream,matchedFilterFlag);
+
 
 %%
 %Plots
@@ -54,12 +56,12 @@ plot(receivedSignal(1:10000))%transmitted
 
 plot(receiveSignal(1:10000))
 % Plotting log noise 
-%figure;
-%loglog(1:size(receivedSignal, 2), noiseVariance, 'o-', 'LineWidth', 2);
-%title('Noise Variance vs. Index of Columns');
-%xlabel('Index of Columns');
-%ylabel('Noise Variance');
-%grid on;
+figure;
+loglog(1:spacing, noiseVariance, 'o-', 'LineWidth', 2);
+title('Noise Variance vs. Index of Columns');
+xlabel('Index of Columns');
+ylabel('Noise Variance');
+grid on;
 
 % Generate a random starting index
 startIndex = randi(length(bitstream) -100 + 1);
@@ -114,11 +116,17 @@ function receivedSignal = MyMPAM(bitstream,M,Es)
         bitstream=bitstream;
     end 
     symbolMatrix = reshape(bitstream, k, length(bitstream)/k)';
-    if k>
-    symbols=bi2de(symbolMatrix,k,'left-msb') +Es;
-
+    
     % Map symbols to amplitudes (equally and symmetrically spaced)
+
     amplitudeLevels = linspace(-(M-1)*d, (M-1)*d, M);
+    if k>1
+    symbols=bi2de(symbolMatrix,k,'left-msb') +Es;
+    else 
+        symbols=symbolMatrix+Es;
+
+    end 
+    % Map symbols to amplitudes (equally and symmetrically spaced)
     %disp(amplitudeLevels)
     symbols(symbols > M) = M; %Don't know
     transmitSignal = amplitudeLevels(symbols);
@@ -181,4 +189,35 @@ function receiveSignal = MyAWGNchannel(transmitSignal, noiseVariance)
 end
 
 
+function [estimatedBitstreammatched, BERmatched] = DemodulateMPAMmatched(receivedSignal,M,Es,transmittedBitstream,matchedFilterFlag);
+    
+        % Reshape received signal into matrix with T elements per rowT=100;
+         T=100;
+         d = sqrt(3*Es/(M^2-1));
+         k = log2(M);
 
+         receivedMatrix = downsample(receivedSignal, T).';
+
+         %receivedMatrix = reshape(receivedSignal, T, length(receivedSignal)/T)';
+         amplitudeLevels = linspace(-(M-1)*d, (M-1)*d, M);
+
+       % Estimate symbols from received samples
+         estimatedSymbols = zeros(size(receivedMatrix, 1), 1);
+
+        for i = 1:size(receivedMatrix, 1)
+        [~, index] = min(abs(receivedMatrix(i, 1) - amplitudeLevels));
+        estimatedSymbols(i) = index-1; 
+        end
+        
+        % Convert symbols to bitstream
+        estimatedSymbolMatrix = de2bi(estimatedSymbols, k, 'left-msb');
+        estimatedBitstream = reshape(estimatedSymbolMatrix', 1, []);
+        estimatedBitstream=estimatedBitstream(1:size(transmittedBitstream,2));
+        % Calculate Bit Error Rate (BER)
+    
+        numErrors = sum(estimatedBitstream ~= transmittedBitstream);
+        BER = numErrors / length(transmittedBitstream);
+end
+
+
+end 
