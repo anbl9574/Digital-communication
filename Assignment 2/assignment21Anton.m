@@ -12,7 +12,7 @@ Es=1;
 T=100;
 receivedSignal = MyMPAM(bitstream, M, Es);
 plot(receivedSignal(1:10000))%transmitted
-[estimatedBitstream, BER] = DemodulateMPAM(receivedSignal,M,Es,transmittedBitstream)
+[estimatedBitstream, BER] = DemodulateMPAM(receivedSignal,M,Es,transmittedBitstream);
 
 function receivedSignal = MyMPAM(bitstream,M,Es)
     d = sqrt(3*Es/(M^2-1));
@@ -57,20 +57,19 @@ function [estimatedBitstream, BER] = DemodulateMPAM(receivedSignal, M, Es, trans
          receivedMatrix = reshape(receivedSignal, T, length(receivedSignal)/T)';
          amplitudeLevels = linspace(-(M-1)*d, (M-1)*d, M);
 
+       % Estimate symbols from received samples
+        [~, symbols] = ismember(receivedMatrix, amplitudeLevels);
+        
 
-         % Estimate symbols from received samples
-         estimatedSymbols = zeros(size(receivedMatrix, 1), 1);
-         for i = 1:size(receivedMatrix, 1)
-            [~, index] = min(receivedMatrix(i, 1:4) -  linspace(-(M-1)*d, (M-1)*d, M)); %Something is wrong here
-            estimatedSymbols(i) = index - 1;  
+        symbols=symbols(:,1)-Es;
+        symbols = symbols(symbols ~= -1);
 
-            % Convert symbols to bitstream
-            estimatedSymbolMatrix = de2bi(estimatedSymbols, k, 'left-msb');
-            estimatedBitstream = reshape(estimatedSymbolMatrix', 1, []);
+        % Convert symbols to bitstream
+        estimatedSymbolMatrix = de2bi(symbols, k, 'left-msb');
+        estimatedBitstream = reshape(estimatedSymbolMatrix', 1, []);
 
-            % Calculate Bit Error Rate (BER)
-            %numErrors = sum(estimatedBitstream ~= transmittedBitstream); %Wrong here
-            %BER = numErrors / length(transmittedBitstream);
+        % Calculate Bit Error Rate (BER)
+        numErrors = sum(estimatedBitstream ~= transmittedBitstream);
+        BER = numErrors / length(transmittedBitstream);
 
-         end
-end 
+end
