@@ -6,7 +6,7 @@ load train;
 unquantizedSignal = y;
 mean = mean(y);
 Vp = 1;
-N = 4;
+N = 3;
 
 
 [quantizedSignal,varLin,varSat,varTeo,SNqR,SNqRTeo] = MyQuantizer(unquantizedSignal,Vp,N);

@@ -95,7 +95,7 @@ for i = 1:spacing
     [estimatedBitStream, BER] = DemodulateMPAM(receiveSignal, M, Es, transmittedBitstream, matchedFilterFlag);
     % Store BER for plotting
     Ber_8_PAM(i) = BER;
-end 
+end
 
 
 
@@ -133,30 +133,30 @@ grid on;
 %Functions
 
 function transmitSignal = MyMPAM(bitstream,M,Es)
-    d = sqrt(3*Es/(M^2-1));
-    
-    k = log2(M);
+d = sqrt(3*Es/(M^2-1));
 
-    if mod(length(bitstream), k) ~= 0
+k = log2(M);
+
+if mod(length(bitstream), k) ~= 0
 
     % Calculate the number of zeros needed for padding
     paddingSize = k - mod(length(bitstream), k);
     % Pad the bitstream with zeros
-    bitstream = transpose([bitstream.', zeros(1, paddingSize)]);   
-    else 
-        bitstream=bitstream;
-    end 
-    symbolMatrix = reshape(bitstream, k, length(bitstream)/k)';
-    
-    % Map symbols to amplitudes (equally and symmetrically spaced)
+    bitstream = transpose([bitstream.', zeros(1, paddingSize)]);
+else
+    bitstream=bitstream;
+end
+symbolMatrix = reshape(bitstream, k, length(bitstream)/k)';
+
+% Map symbols to amplitudes (equally and symmetrically spaced)
 
     amplitudeLevels = linspace(-(M-1)*d, (M-1)*d, M);
     if k>1
-    symbols=bi2de(symbolMatrix,k-1,'left-msb') +Es;
-    else 
+        symbols=bi2de(symbolMatrix,k-1,'left-msb') +Es;
+    else
         symbols=symbolMatrix+Es;
 
-    end 
+    end
     % Map symbols to amplitudes (equally and symmetrically spaced)
     %disp(amplitudeLevels)
     symbols(symbols > M) = M; %Don't know
@@ -177,15 +177,15 @@ function transmitSignal = MyMPAM(bitstream,M,Es)
     transmitSignal=shapedSignal;
 
 
-end 
+end
 
 
 function receiveSignal = MyAWGNchannel(transmitSignal, noiseVariance)
-    % Generate white Gaussian noise with specified variance
-    noise = wgn(size(transmitSignal, 1), size(transmitSignal, 2), noiseVariance, 'linear');
-    
-    % Add noise to the transmitted signal
-    receiveSignal = transmitSignal + noise;
+% Generate white Gaussian noise with specified variance
+noise = wgn(size(transmitSignal, 1), size(transmitSignal, 2), noiseVariance, 'linear');
+
+% Add noise to the transmitted signal
+receiveSignal = transmitSignal + noise;
 end
 
 
@@ -198,8 +198,6 @@ k = log2(M);
 receivedMatrix=receivedSignal;
 
 if matchedFilterFlag==1
-    amplitudeLevels = linspace(-(M-1)*d, (M-1)*d, M);
-
     segmentSize=floor(length(receivedMatrix)/T);
     integral1=zeros(1,segmentSize);
     for j=1:segmentSize-99
