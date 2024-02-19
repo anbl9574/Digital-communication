@@ -10,7 +10,7 @@ load train;
 unquantizedSignal = y;
 mean = mean(y);
 Vp = 1;
-N = 1;
+N = 3;
 
 
 [quantizedSignal,varLin,varSat,varTeo,SNqR,SNqRTeo] = MyQuantizer(unquantizedSignal,Vp,N);
@@ -20,14 +20,14 @@ estimatedSignal = MyDAconverter(estimatedBitStream,Vp,N);
 %%
 %Defining parameters and loading in bitstream from assignment 2
 
-load("Bitstream1bit.mat"); %From assignment 1, run assignment 1 code and decide how many bits you want, should
+%load("Bitstream1bit.mat"); %From assignment 1, run assignment 1 code and decide how many bits you want, should
 %agree with M=2^k.
 bitstream = estimatedBitStream;
 
-M = 2;
+M = 2^N;
 Es = 1;
 T=100;
-matchedFilterFlag=1; %Matched filter on/off
+matchedFilterFlag=0; %Matched filter on/off
 %%
 
 %Calling the functions
@@ -39,8 +39,8 @@ Ber_8_PAM=zeros(spacing,1);
 transmitSignal = MyMPAM(bitstream, M, Es);
 receiveSignal = MyAWGNchannel(transmitSignal,0.01);
 %%
-
-% Plotting the signal with noise against the one without
+% 
+% % Plotting the signal with noise against the one without
 figure;
 
 % Plot received signal with AWGN
@@ -51,6 +51,8 @@ hold on;
 plot(transmitSignal(1:6700), 'LineWidth', 2, 'DisplayName', 'Transmitted Signal', 'Color',[1 0.6471 0], 'LineStyle', '--');
 
 hold off;
+
+
 
 xlabel('Sample Index');
 ylabel('Amplitude');
@@ -76,15 +78,15 @@ subplot(2, 1, 2);
 stem(subsetEstimatedBitstream, 'Marker', 'x', 'DisplayName', 'Estimated Bitstream');
 title('Estimated Bitstream');
 legend('show');
-%%
+%
 
 transmittedBitstream=bitstream;
-[estimatedBitStream, BER] = DemodulateMPAM(receiveSignal, M, Es, transmittedBitstream, matchedFilterFlag);
+% [estimatedBitStream, BER] = DemodulateMPAM(receiveSignal, M, Es, transmittedBitstream, matchedFilterFlag);
 noiseVariance = logspace(-3,-1,spacing);
 
 clear receiveSignal;
-
-%testing
+% 
+% % %testing
 for i = 1:spacing
     receivedSignal = MyMPAM(transmittedBitstream, M, Es);
     receiveSignal = MyAWGNchannel(receivedSignal,noiseVariance(i));
@@ -100,6 +102,7 @@ clear receiveSignal;
 clear transmittedBitstream;
 clear y;
 clear mean;
+clear N;
 %% Assignment 1
 load train;
 unquantizedSignal = y;
@@ -112,13 +115,13 @@ estimatedBitStream = MyGraycode(quantizedSignal,Vp,N);
 estimatedSignal = MyDAconverter(estimatedBitStream,Vp,N);
 
 %%
-load("Bitstream3bit.mat");%From assignment 1, run assignment 1 code and decide how many bits you want, should
+%load("Bitstream3bit.mat");%From assignment 1, run assignment 1 code and decide how many bits you want, should
 %agree with M=2^k.
 transmittedBitstream=estimatedBitStream;
 
 
 
-M=8;
+M=2^N;
 Es=1;
 T=100;
 
@@ -175,19 +178,19 @@ if mod(length(bitstream), k) ~= 0
     % Calculate the number of zeros needed for padding
     paddingSize = k - mod(length(bitstream), k);
     % Pad the bitstream with zeros
-    bitstream = transpose([bitstream.', zeros(1, paddingSize)]);
+    bitstream = transpose([bitstream, zeros(1, paddingSize)]);
 else
     bitstream=bitstream;
 end
-symbolMatrix = reshape(bitstream, k, length(bitstream)/k)';
-
+%symbolMatrix = reshape(bitstream, k, length(bitstream)/k)';
+symbolMatrix=bitstream.';
 % Map symbols to amplitudes (equally and symmetrically spaced)
 
     amplitudeLevels = linspace(-(M-1)*d, (M-1)*d, M);
     if k>1
-        symbols=bi2de(symbolMatrix,k-1,'left-msb') +Es;
+        symbols=bit2int(symbolMatrix,k)+1; %Adding one for index; 
     else
-        symbols=symbolMatrix+Es;
+        symbols=symbolMatrix+1; %Adding 1 for index
 
     end
     % Map symbols to amplitudes (equally and symmetrically spaced)
@@ -196,11 +199,6 @@ symbolMatrix = reshape(bitstream, k, length(bitstream)/k)';
     transmitSignalfirst = amplitudeLevels(symbols);
     %disp(signalAmplitudes)
     % Create the transmitted signal
-    E = 0;
-    for i = 1:length(amplitudeLevels)
-        E = E + amplitudeLevels(i)^2;
-    end
-    E = E/4;
 
     % Rectangular pulse shaping
     T=100;
@@ -253,8 +251,8 @@ for i = 1:size(integral1, 2)
 end
 
 % Convert symbols to bitstream
-estimatedSymbolMatrix = de2bi(estimatedSymbols, k, 'left-msb');
-estimatedBitStream = reshape(estimatedSymbolMatrix',1, []);
+estimatedSymbolMatrix = int2bit(estimatedSymbols.', k);
+estimatedBitStream = reshape(estimatedSymbolMatrix,1, []);
 estimatedBitStream=estimatedBitStream(1:size(transmittedBitstream,2));
 % Calculate Bit Error Rate (BER)
 
