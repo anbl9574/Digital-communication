@@ -10,7 +10,7 @@ load train;
 unquantizedSignal = y;
 mean = mean(y);
 Vp = 1;
-N = 3;
+N = 1;
 
 
 [quantizedSignal,varLin,varSat,varTeo,SNqR,SNqRTeo] = MyQuantizer(unquantizedSignal,Vp,N);
@@ -35,14 +35,16 @@ spacing=100;
 
 Ber_2_PAM=zeros(spacing,1);
 Ber_8_PAM=zeros(spacing,1);
-
+    
 transmitSignal = MyMPAM(bitstream, M, Es);
 receiveSignal = MyAWGNchannel(transmitSignal,0.01);
+%[estimatedBitStream, BER] = DemodulateMPAM(MyMPAM(bitstream,M,Es), M, Es, bitstream, matchedFilterFlag);
+
+
+
+
 %%
 % 
-% % Plotting the signal with noise against the one without
-figure;
-
 % Plot received signal with AWGN
 plot(receiveSignal(1:6700), 'LineWidth', 2, 'DisplayName', 'Received Signal with AWGN');
 hold on;
@@ -83,9 +85,9 @@ legend('show');
 transmittedBitstream=bitstream;
 % [estimatedBitStream, BER] = DemodulateMPAM(receiveSignal, M, Es, transmittedBitstream, matchedFilterFlag);
 noiseVariance = logspace(-3,-1,spacing);
-
 clear receiveSignal;
-% 
+
+
 % % %testing
 for i = 1:spacing
     receivedSignal = MyMPAM(transmittedBitstream, M, Es);
@@ -138,7 +140,6 @@ end
 
 %%
 %Plots
-
 %plot(receiveSignal(1:500000))%with AWGN
 % Plotting log noise 
 figure;
@@ -147,7 +148,7 @@ title('Noise Variance vs. Index of Columns');
 xlabel('Index of Columns');
 ylabel('Noise Variance');
 grid on;
-
+%%
 
 % Plot
 figure;
@@ -156,6 +157,9 @@ title('BER vs Noise Variance for 2-PAM');
 xlabel('Noise Variance');
 ylabel('Bit Error Rate (BER)');
 grid on;
+hold on
+
+
 
 % Plot
 figure;
@@ -164,6 +168,7 @@ title('BER vs Noise Variance for 8-PAM');
 xlabel('Noise Variance');
 ylabel('Bit Error Rate (BER)');
 grid on;
+
 
 %%
 %Functions
@@ -178,16 +183,17 @@ if mod(length(bitstream), k) ~= 0
     % Calculate the number of zeros needed for padding
     paddingSize = k - mod(length(bitstream), k);
     % Pad the bitstream with zeros
-    bitstream = transpose([bitstream, zeros(1, paddingSize)]);
+    bitstream = [bitstream, zeros(1, paddingSize)].';
 else
-    bitstream=bitstream;
+    bitstream=bitstream.';
 end
 %symbolMatrix = reshape(bitstream, k, length(bitstream)/k)';
-symbolMatrix=bitstream.';
+symbolMatrix=bitstream;
 % Map symbols to amplitudes (equally and symmetrically spaced)
 
     amplitudeLevels = linspace(-(M-1)*d, (M-1)*d, M);
     if k>1
+
         symbols=bit2int(symbolMatrix,k)+1; %Adding one for index; 
     else
         symbols=symbolMatrix+1; %Adding 1 for index
@@ -231,7 +237,7 @@ receivedMatrix=receivedSignal;
 if matchedFilterFlag==1
     segmentSize=floor(length(receivedMatrix)/T);
     integral1=zeros(1,segmentSize);
-    for j=1:segmentSize-99
+    for j=1:segmentSize
         integral1(j)=trapz(receivedSignal((1+((j -1)*T)):(j*T)))/T ;
     end
 else
@@ -299,7 +305,7 @@ function [quantizedSignal,varLin,varSat,varTeo,SNqR,SNqRTeo] = MyQuantizer(unqua
     varSat = var(satError);
 
     % Signal to Quantization Noise power Ratio (SNqR) in dB
-    SNqR = 20 * log10(var(unquantizedSignal) ./ varSat);
+    SNqR = 10 * log10(var(unquantizedSignal) ./ varSat);
 end
 
 function [bitStream] = MyGraycode(quantizedSignal,Vp,N)
