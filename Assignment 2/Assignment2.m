@@ -163,7 +163,7 @@ function [quantizedSignal,varLin,varSat,varTeo,SNqR,SNqRTeo] = MyQuantizer(unqua
     varSat = var(satError);
 
     % Signal to Quantization Noise power Ratio (SNqR) in dB
-    SNqR = 20 * log10(var(unquantizedSignal) ./ varSat);
+    SNqR = 10 * log10(var(unquantizedSignal) ./ varSat);
 end
 
 function [bitStream] = MyGraycode(quantizedSignal,Vp,N)
