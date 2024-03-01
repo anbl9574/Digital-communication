@@ -2,21 +2,12 @@ close all
 clearvars
 clc
 
-%c = [1,0,0,1,1,0,0,0,0,1,1,1,0,0,0,0];
 load("Bitstream4bit.mat");
 c = estimatedBitStream;
 
-s = maponto16QAM(c);
-r = channel2(s,0.0135);
-b = detect16QAM(r);
-
-t = mapontoBPSK(c);
-u = channel2(t,0.01);
-d = detectBPSK(u);
-
-%TEST()
-%QPSK()
-TEST_16QAM(s,r,c,b)
+TEST()
+QPSK()
+TEST_16QAM(c)
 BERCURVES(c)
 
 %Functions
@@ -44,56 +35,60 @@ numSymbols = 4;
 phase_angles = [pi/4, 3*pi/4, 5*pi/4, 7*pi/4]; % Phase angles for QPSK symbols
 
 % Create complex symbols with unit magnitude and specified phases
+symbols = (1:4);
 for i = 1:numSymbols
     symbols(i) = exp(1i * phase_angles(i));
 end
 
 % Verify average symbol power
 average_power = mean(abs(symbols).^2);
-disp(['Average symbol power: ', num2str(average_power)]);
+disp(['QPSK Average symbol power: ', num2str(average_power)]);
 
 % Plot the symbols and detection regions in the complex plane
 figure;
-plot(real(symbols), imag(symbols), 'rx','LineWidth', 2);
+plot(real(symbols), imag(symbols), 'cx', 'MarkerSize', 10,'LineWidth', 3);
 xlabel('In-phase');
 ylabel('Quadrature');
 title('QPSK Symbols with Detection Regions');
-xlim([-1,1]);
-ylim([-1,1]);
+
+xlim([-3.2, 3.2]);
+ylim([-3.2, 3.2]);
 axis square;
 grid on;
 hold on;
 
 % Define detection regions and plot
-xline(0, 'r--', 'LineWidth', 2);
-yline(0, 'r--', 'LineWidth', 2);
+xline(0, 'r--', 'LineWidth', 3);
+yline(0, 'r--', 'LineWidth', 3);
+legend('Sybols', 'Decition Boundries', 'Location', 'southeast')
+    
 hold off;
 
 % Verify for different noise power
 SignalSymbols = symbols(2) * ones(1, 1000);
-noisePower2 = [0, 0.01, 0.1, 1];
+noisePower2 = [0.01, 0.1, 1];
 
 for i = 1:length(noisePower2)
     ReccivedSymbols = channel2(SignalSymbols,noisePower2(i));
     figure;
-    scatter(real(ReccivedSymbols), imag(ReccivedSymbols), 'b.');
+    plot(real(symbols), imag(symbols), 'cx', 'MarkerSize', 10, 'LineWidth', 3);
     hold on;
-    plot(real(SignalSymbols), imag(SignalSymbols), 'rx', 'MarkerSize', 5, 'LineWidth', 2);
+    plot(real(ReccivedSymbols), imag(ReccivedSymbols), 'b.', 'MarkerSize', 10, 'LineWidth', 2);
+    plot(real(SignalSymbols), imag(SignalSymbols), 'rx', 'MarkerSize', 10, 'LineWidth', 3);
     xlabel('Real-Part');
     ylabel('Imaginary-Part');
     
     title(['QPSK Sent Vs Reccived Symbols with Detection Regions, noise variance: ', num2str(noisePower2(i))]);
-    xline(0, 'r--', 'LineWidth', 2);
-    yline(0, 'r--', 'LineWidth', 2);
+    xline(0, 'r--', 'LineWidth', 3);
+    yline(0, 'r--', 'LineWidth', 3);
     
-    xmax = max(real(ReccivedSymbols));
-    xmin = min(real(ReccivedSymbols));
-    xlims = max(abs(xmax),abs(xmin));
-    lim = xlims + 0.1;
-    xlim([-lim, lim]);
-    ylim([-lim, lim]);
-    
-    legend('Noisy Reccived Symbols', 'Sent Symbol' ,'Decition Boundries')
+%     xmax = max(real(ReccivedSymbols));
+%     xmin = min(real(ReccivedSymbols));
+%     xlims = max(abs(xmax),abs(xmin));
+%     lim = xlims + 0.1;
+    xlim([-3.2, 3.2]);
+    ylim([-3.2, 3.2]);
+    legend('Sybols', 'Noisy Reccived Symbols', 'Sent Symbol', 'Decition Boundries', 'Location', 'southeast')
     axis square;
     grid on;
     hold off;
@@ -101,7 +96,7 @@ for i = 1:length(noisePower2)
     %SER
     ErrorSymbol = sum(angle(ReccivedSymbols) > pi | angle(ReccivedSymbols) < pi/2);
     SER = ErrorSymbol/length(ReccivedSymbols);
-    disp(['Noise varriance: (', num2str(noisePower2(i)),'), Empirical SER: ', num2str(SER)]);%, ', Empirical BER: ' num2str(SER)]);
+    disp(['QPSK Noise varriance: (', num2str(noisePower2(i)),'), Empirical SER: ', num2str(SER)]);%, ', Empirical BER: ' num2str(SER)]);
     
 end
 end
@@ -178,11 +173,15 @@ noisySignal = channel2(transmittedSignal, noisePower);
 
 % Calculate the power of the noisy signal
 noisyPower = mean(abs(noisySignal).^2);
-disp(['Noisy signal power: ', num2str(noisyPower)]);
+disp(['AWGN Noisy signal power: ', num2str(noisyPower)]);
 end
 
-function TEST_16QAM(s,r,c,b)
+function TEST_16QAM(c)
 Es = 1;
+s = maponto16QAM(c);
+r = channel2(s,0.01);
+b = detect16QAM(r);
+
 % Define 16-QAM constellation points
 P = 4*Es/(sqrt(2)+2*sqrt(10)+sqrt(18));
         
@@ -197,7 +196,7 @@ for i = 1:length(Symbols)
     Es = Es + abs(Symbols(i));
 end
 Es = Es/numel(Symbols);
-disp(['16QAM average symbol energy = ', num2str(Es)]);
+disp(['16QAM average symbol energy: ', num2str(Es)]);
 
 %SER
 DeterminedSymbols = maponto16QAM(b);
@@ -208,14 +207,13 @@ BER = ErrorSymbol/length(s);
 ErrorBit = sum(c ~= b);
 SER = ErrorBit/length(c);
 
-disp(['Empirical BER: ', num2str(SER), ', Empirical BER: ' num2str(BER)]);
+disp(['16QAM Empirical BER: ', num2str(SER), ', Empirical BER: ' num2str(BER)]);
 
 % Plot Symbols
 figure;
-
 xlabel('Real');
 ylabel('Imaginary');
-title('Gray Coded Bitmapping for 16QAM');
+title('16QAM Symbols with Decition Bounderies');
 xlim([-5*P,5*P]);
 ylim([-5*P,5*P]);
 xline(0, 'r--', 'LineWidth', 1);
@@ -227,21 +225,44 @@ yline(-2*P, 'r--', 'LineWidth', 1);
 axis square;
 grid on;
 hold on;
-plot(real(r), imag(r), 'gx','LineWidth', 2);
-% plot(real(s), imag(s), 'bo','LineWidth', 2);
+box on;
 plot(real(Symbols), imag(Symbols), 'bx','LineWidth', 2);
+
+% Plot 
+figure;
+hold on;
+plot(real(r), imag(r), 'gx','LineWidth', 2);
+plot(real(Symbols), imag(Symbols), 'bx','LineWidth', 2);
+xlabel('Real');
+ylabel('Imaginary');
+title('Reccived Symbols with Noise Variance: 0.01 (16QAM)');
+xlim([-5*P,5*P]);
+ylim([-5*P,5*P]);
+xline(0, 'r--', 'LineWidth', 1);
+xline(2*P, 'r--', 'LineWidth', 1);
+xline(-2*P, 'r--', 'LineWidth', 1);
+yline(0, 'r--', 'LineWidth', 1);
+yline(2*P, 'r--', 'LineWidth', 1);
+yline(-2*P, 'r--', 'LineWidth', 1);
+axis square;
+box on;
+grid on;
+
 
 end
 
 function BERCURVES(c)
-spacing = 20;
-noiseVar = logspace(-2,0,spacing);
+Es = 1;
+No = logspace(-2,0,20);
+EsNo = Es./No;
+EsNo_dB = 10*log10(EsNo);
 
 %testing
-for i = 1:spacing
+BER16QAM = (1:length(No));
+for i = 1:length(No)
     %
     s = maponto16QAM(c);
-    r = channel2(s,noiseVar(i));
+    r = channel2(s,No(i));
     b = detect16QAM(r);
     
     % Claculate and store BER for plotting
@@ -249,26 +270,33 @@ for i = 1:spacing
     BER16QAM(i) = BER;
 end 
 
-for i = 1:spacing
+BERBPSK = (1:length(No));
+for i = 1:length(No)
     %
     s = mapontoBPSK(c);
-    r = channel2(s,noiseVar(i));
+    r = channel2(s,No(i));
     b = detectBPSK(r);
     
     % Claculate and store BER for plotting
     BER = sum(c ~= b)/length(c);
     BERBPSK(i) = BER;
-end 
+end
+
+BER16QAMTHEO = 3/2*erfc(sqrt(0.1*(10.^(EsNo_dB/10))));
+BERBPSKTHEO = 0.5*erfc(sqrt(EsNo)); 
 
 figure;
-loglog(noiseVar, BER16QAM, '-o');
+semilogy(EsNo_dB, BER16QAM, '.-');
 hold on;
-loglog(noiseVar, BERBPSK, '-o');
-title('BER vs Noise Variance for 16QAM and BPSK');
-xlabel('Noise Variance');
+semilogy(EsNo_dB, BER16QAMTHEO, '.-');
+semilogy(EsNo_dB, BERBPSK, '.-');
+semilogy(EsNo_dB, BERBPSKTHEO, '.-');
+title('BER vs SNR for 16QAM and BPSK');
+xlabel('Signal Noise Ratio (SNR [dB])');
 ylabel('Bit Error Rate (BER)');
+ylim([10^-5,1]);
 grid on;
-legend('16QAM', 'BPSK', 'Location', 'northwest');
+legend('16QAM', 'Theoretical 16QAM', 'BPSK', 'Theoretical BPSK', 'Location', 'southwest');
 
 
 end
